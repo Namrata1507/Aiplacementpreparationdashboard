@@ -13,25 +13,18 @@ import {
 import { useState, useEffect } from "react";
 
 const navigation = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Roadmap', path: '/roadmap', icon: Map },
-  { name: 'Tasks', path: '/task/1', icon: Target },
-  { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-  { name: 'Companies', path: '/companies', icon: Building2 },
-  { name: 'Resources', path: '/resources', icon: BookOpen },
+  { name: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
+  { name: 'Roadmap', path: '/app/roadmap', icon: Map },
+  { name: 'Tasks', path: '/app/task/1', icon: Target },
+  { name: 'Analytics', path: '/app/analytics', icon: BarChart3 },
+  { name: 'Companies', path: '/app/companies', icon: Building2 },
+  { name: 'Resources', path: '/app/resources', icon: BookOpen },
 ];
 
 export default function RootLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Automatically redirect to dashboard if on root path (skip onboarding for demo)
-  useEffect(() => {
-    if (location.pathname === '/') {
-      navigate('/dashboard');
-    }
-  }, [location.pathname, navigate]);
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp, Clock, Award, CheckCircle, Circle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronDown, ChevronUp, Clock, Award, CheckCircle, Circle, AlertCircle } from "lucide-react";
 
 const roadmapData = [
   {
@@ -91,6 +91,50 @@ const roadmapData = [
 
 export default function RoadmapPage() {
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({0: true});
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [assessmentResults, setAssessmentResults] = useState<any>(null);
+  const [personalizedRoadmap, setPersonalizedRoadmap] = useState(roadmapData);
+
+  useEffect(() => {
+    const profile = localStorage.getItem('userProfile');
+    const results = localStorage.getItem('assessmentResults');
+    
+    if (profile) setUserProfile(JSON.parse(profile));
+    if (results) {
+      const parsedResults = JSON.parse(results);
+      setAssessmentResults(parsedResults);
+      
+      // Customize roadmap based on skill level
+      const customized = customizeRoadmap(parsedResults.skillLevel);
+      setPersonalizedRoadmap(customized);
+    }
+  }, []);
+
+  const customizeRoadmap = (skillLevel: string) => {
+    let roadmap = [...roadmapData];
+    
+    if (skillLevel === 'Advanced') {
+      // For advanced users, mark Foundation as mostly completed and focus on advanced topics
+      roadmap[0].sections.forEach(section => {
+        section.tasks = section.tasks.map(task => ({ ...task, completed: true }));
+      });
+      roadmap[1].sections.forEach(section => {
+        section.tasks = section.tasks.map((task, idx) => 
+          idx < 2 ? { ...task, completed: true } : task
+        );
+      });
+    } else if (skillLevel === 'Intermediate') {
+      // For intermediate users, mark some Foundation tasks as complete
+      roadmap[0].sections.forEach(section => {
+        section.tasks = section.tasks.map((task, idx) => 
+          idx < 2 ? { ...task, completed: true } : task
+        );
+      });
+    }
+    // Beginner users start from scratch
+    
+    return roadmap;
+  };
 
   const toggleSection = (index: number) => {
     setExpandedSections(prev => ({
@@ -115,6 +159,21 @@ export default function RoadmapPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Your Learning Roadmap</h1>
         <p className="text-slate-600">A structured path from foundation to placement success</p>
+        
+        {/* Personalization Banner */}
+        {assessmentResults && (
+          <div className="mt-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-4 text-white flex items-center gap-3">
+            <AlertCircle size={24} />
+            <div>
+              <p className="font-medium">
+                Personalized for {assessmentResults.skillLevel} Level
+              </p>
+              <p className="text-sm text-blue-100">
+                This roadmap is customized based on your assessment performance ({Math.round(assessmentResults.score)}%)
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Timeline */}
@@ -123,7 +182,7 @@ export default function RoadmapPage() {
         <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 via-pink-500 to-green-500" />
 
         <div className="space-y-8">
-          {roadmapData.map((phase, phaseIndex) => (
+          {personalizedRoadmap.map((phase, phaseIndex) => (
             <div key={phaseIndex} className="relative">
               {/* Phase Marker */}
               <div className="flex items-start gap-4 mb-4">

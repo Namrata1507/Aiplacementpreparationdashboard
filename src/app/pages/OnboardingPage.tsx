@@ -1,222 +1,285 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import { Sparkles, ChevronRight, Check } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-
-const steps = ['Academic Year', 'Skill Level', 'Target Companies', 'Complete'];
-
-const academicYears = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
-const skillLevels = [
-  { value: 'beginner', label: 'Beginner', desc: 'Just starting out' },
-  { value: 'intermediate', label: 'Intermediate', desc: 'Some experience' },
-  { value: 'advanced', label: 'Advanced', desc: 'Strong foundation' },
-];
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { User, GraduationCap, Calendar, ArrowRight, Upload, FileText, X } from 'lucide-react';
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
-    academicYear: '',
-    skillLevel: '',
-    targetCompanies: '',
     name: '',
+    age: '',
+    field: '',
+    year: ''
   });
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      // Complete onboarding
-      localStorage.setItem('hasOnboarded', 'true');
-      localStorage.setItem('userName', formData.name || 'Student');
-      localStorage.setItem('userProfile', JSON.stringify(formData));
-      navigate('/dashboard');
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate all fields
+    if (!formData.name || !formData.age || !formData.field || !formData.year) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    // Save profile data to localStorage
+    const profileData = {
+      ...formData,
+      resumeFileName: resumeFile?.name || null,
+      resumeUploaded: !!resumeFile
+    };
+    localStorage.setItem('userProfile', JSON.stringify(profileData));
+    
+    // In a real app, you would upload the resume file to a server here
+    if (resumeFile) {
+      console.log('Resume file ready to upload:', resumeFile);
+      // You could convert to base64 and store, or upload to server
+    }
+    
+    // Navigate to assessment test
+    navigate('/assessment');
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type (PDF, DOC, DOCX)
+      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (validTypes.includes(file.type)) {
+        setResumeFile(file);
+      } else {
+        alert('Please upload a PDF or Word document');
+      }
     }
   };
 
-  const canProceed = () => {
-    switch (currentStep) {
-      case 0:
-        return formData.name && formData.academicYear;
-      case 1:
-        return formData.skillLevel;
-      case 2:
-        return true; // Optional step
-      default:
-        return true;
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (validTypes.includes(file.type)) {
+        setResumeFile(file);
+      } else {
+        alert('Please upload a PDF or Word document');
+      }
     }
+  };
+
+  const removeResume = () => {
+    setResumeFile(null);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
-        {/* Logo */}
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-lg rounded-2xl px-6 py-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="text-left">
-              <h1 className="font-bold text-xl text-white">Autonomy Loop AI</h1>
-              <p className="text-xs text-white/80">Your Placement Preparation Assistant</p>
-            </div>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mb-4">
+            <User className="text-white" size={32} />
           </div>
-        </div>
-
-        {/* Progress Indicator */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {steps.map((step, index) => (
-            <div key={step} className="flex items-center">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                  index <= currentStep
-                    ? 'bg-white text-purple-600'
-                    : 'bg-white/20 text-white/60'
-                }`}
-              >
-                {index < currentStep ? <Check className="w-5 h-5" /> : index + 1}
-              </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={`w-12 h-1 mx-2 rounded transition-all ${
-                    index < currentStep ? 'bg-white' : 'bg-white/20'
-                  }`}
-                />
-              )}
-            </div>
-          ))}
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">
+            Complete Your Profile
+          </h1>
+          <p className="text-slate-600">
+            Help us personalize your placement preparation journey
+          </p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          {/* Step 0: Academic Year */}
-          {currentStep === 0 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome! Let's get started</h2>
-                <p className="text-slate-600">Tell us a bit about yourself</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Your Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="Enter your name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label>Select Your Academic Year</Label>
-                  <div className="grid grid-cols-2 gap-3 mt-2">
-                    {academicYears.map((year) => (
-                      <button
-                        key={year}
-                        onClick={() => setFormData({ ...formData, academicYear: year })}
-                        className={`p-4 rounded-xl border-2 transition-all ${
-                          formData.academicYear === year
-                            ? 'border-purple-600 bg-purple-50'
-                            : 'border-slate-200 hover:border-purple-300'
-                        }`}
-                      >
-                        <span className="font-semibold text-slate-900">{year}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Full Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Enter your full name"
+              />
             </div>
-          )}
 
-          {/* Step 1: Skill Level */}
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">What's your current skill level?</h2>
-                <p className="text-slate-600">This helps us personalize your learning path</p>
-              </div>
+            {/* Age */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Age *
+              </label>
+              <input
+                type="number"
+                value={formData.age}
+                onChange={(e) => handleChange('age', e.target.value)}
+                required
+                min="16"
+                max="40"
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Enter your age"
+              />
+            </div>
 
-              <div className="space-y-3">
-                {skillLevels.map((level) => (
+            {/* Field of Study */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                <GraduationCap className="inline mr-2" size={18} />
+                Field of Study *
+              </label>
+              <select
+                value={formData.field}
+                onChange={(e) => handleChange('field', e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+              >
+                <option value="">Select your field</option>
+                <option value="BCA">BCA (Bachelor of Computer Applications)</option>
+                <option value="MCA">MCA (Master of Computer Applications)</option>
+                <option value="Engineering">B.Tech/B.E. (Engineering)</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            {/* Year of Study */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                <Calendar className="inline mr-2" size={18} />
+                Year of Study *
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {['1st Year', '2nd Year', '3rd Year', '4th Year'].map((year) => (
                   <button
-                    key={level.value}
-                    onClick={() => setFormData({ ...formData, skillLevel: level.value })}
-                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                      formData.skillLevel === level.value
-                        ? 'border-purple-600 bg-purple-50'
-                        : 'border-slate-200 hover:border-purple-300'
+                    key={year}
+                    type="button"
+                    onClick={() => handleChange('year', year)}
+                    className={`py-3 px-4 rounded-lg font-medium transition-all ${
+                      formData.year === year
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
-                    <div className="font-semibold text-slate-900">{level.label}</div>
-                    <div className="text-sm text-slate-600">{level.desc}</div>
+                    {year}
                   </button>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Step 2: Target Companies */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Target Companies (Optional)</h2>
-                <p className="text-slate-600">Which companies are you aiming for?</p>
-              </div>
-
-              <div>
-                <Label htmlFor="companies">Company Names</Label>
-                <Input
-                  id="companies"
-                  placeholder="e.g., Google, Microsoft, TCS (separate by commas)"
-                  value={formData.targetCompanies}
-                  onChange={(e) => setFormData({ ...formData, targetCompanies: e.target.value })}
-                  className="mt-1"
-                />
-                <p className="text-xs text-slate-500 mt-2">You can always update this later</p>
-              </div>
+            {/* Resume Upload */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                <Upload className="inline mr-2" size={18} />
+                Upload Resume (Optional)
+              </label>
+              
+              {!resumeFile ? (
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                    isDragging 
+                      ? 'border-purple-500 bg-purple-50' 
+                      : 'border-slate-300 hover:border-slate-400'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
+                      <Upload className="text-slate-500" size={24} />
+                    </div>
+                    <div>
+                      <p className="text-slate-700 font-medium mb-1">
+                        Drag & drop your resume here
+                      </p>
+                      <p className="text-sm text-slate-500 mb-3">
+                        or click to browse files
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      id="resume-upload"
+                      onChange={handleFileChange}
+                      accept=".pdf,.doc,.docx"
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="resume-upload"
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg cursor-pointer transition-colors"
+                    >
+                      Choose File
+                    </label>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Supported formats: PDF, DOC, DOCX (Max 5MB)
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="border border-slate-200 rounded-lg p-4 bg-green-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <FileText className="text-green-600" size={20} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-800">{resumeFile.name}</p>
+                        <p className="text-sm text-slate-500">{formatFileSize(resumeFile.size)}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeResume}
+                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Remove resume"
+                    >
+                      <X className="text-red-500" size={20} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Step 3: Complete */}
-          {currentStep === 3 && (
-            <div className="space-y-6 text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto">
-                <Check className="w-10 h-10 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">All Set! 🎉</h2>
-                <p className="text-slate-600">
-                  Your personalized roadmap is ready. Let's start your placement preparation journey!
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex items-center gap-3 mt-8">
-            {currentStep > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => setCurrentStep(currentStep - 1)}
-                className="flex-1"
-              >
-                Back
-              </Button>
-            )}
-            <Button
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-4 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
             >
-              {currentStep === steps.length - 1 ? 'Get Started' : 'Continue'}
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
+              Continue to Skill Assessment
+              <ArrowRight size={20} />
+            </button>
+          </form>
+        </div>
+
+        {/* Info Box */}
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            <strong>Next Step:</strong> After completing your profile, you'll take a quick skill 
+            assessment test (15-20 questions, ~20 minutes) to help us understand your current level 
+            and create a personalized roadmap.
+          </p>
         </div>
       </div>
     </div>

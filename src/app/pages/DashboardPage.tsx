@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { 
   CheckCircle2, 
@@ -8,7 +8,9 @@ import {
   Sparkles,
   ChevronRight,
   Calendar,
-  Clock
+  Clock,
+  Award,
+  FileText
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
@@ -34,10 +36,33 @@ const aiSuggestions = [
 
 export default function DashboardPage() {
   const [tasks, setTasks] = useState(dailyTasks);
-  const userName = localStorage.getItem('userName') || 'Student';
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [assessmentResults, setAssessmentResults] = useState<any>(null);
+  
+  useEffect(() => {
+    const profile = localStorage.getItem('userProfile');
+    const results = localStorage.getItem('assessmentResults');
+    if (profile) setUserProfile(JSON.parse(profile));
+    if (results) setAssessmentResults(JSON.parse(results));
+  }, []);
+
+  const userName = userProfile?.name || 'Student';
   const completedCount = tasks.filter(t => t.completed).length;
   const progressPercentage = (completedCount / tasks.length) * 100;
   const currentStreak = 12;
+
+  const getSkillLevelColor = (level: string) => {
+    switch (level) {
+      case 'Advanced':
+        return 'from-green-500 to-emerald-600';
+      case 'Intermediate':
+        return 'from-blue-500 to-purple-600';
+      case 'Beginner':
+        return 'from-orange-500 to-red-500';
+      default:
+        return 'from-slate-500 to-slate-600';
+    }
+  };
 
   const toggleTask = (taskId: number) => {
     setTasks(tasks.map(task => 
@@ -48,9 +73,24 @@ export default function DashboardPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Welcome back, {userName}! 👋</h1>
-        <p className="text-blue-100">Let's continue your placement preparation journey</p>
+      <div className="bg-gradient-to-r from-blue-500 via-purple-600 to-pink-500 rounded-2xl p-8 text-white shadow-xl">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Welcome back, {userName}! 👋</h1>
+            <p className="text-blue-100">
+              {userProfile ? `${userProfile.field} • ${userProfile.year}` : 'Keep up the great work on your placement journey'}
+            </p>
+          </div>
+          {assessmentResults && (
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-6 py-3 flex items-center gap-3">
+              <Award className="text-yellow-300" size={24} />
+              <div>
+                <p className="text-sm text-blue-100">Skill Level</p>
+                <p className="text-xl font-bold">{assessmentResults.skillLevel}</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -202,6 +242,30 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
+
+          {/* Resume Status */}
+          {userProfile?.resumeUploaded && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <FileText className="text-green-600" size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">Resume</h3>
+                  <p className="text-xs text-slate-500">Uploaded</p>
+                </div>
+              </div>
+              <p className="text-sm text-slate-700 mb-3">{userProfile.resumeFileName}</p>
+              <div className="flex gap-2">
+                <button className="flex-1 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+                  View
+                </button>
+                <button className="flex-1 px-3 py-2 text-sm bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors">
+                  Update
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
